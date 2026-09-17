@@ -1,0 +1,87 @@
+# AI-Humanizer dataset catalog (current training sources)
+#
+# None of these are downloaded or used for training by default.
+# Enable / point paths via configs/config.yaml → datasets.
+#
+# IMPORTANT: There is no single public dataset that maps
+#   AI-generated text → humanized text
+# for this project. Pair construction (human text rewritten by AI)
+# is planned for later — see data/README.md.
+
+datasets:
+  blog_authorship:
+    enabled: true
+    role: human_style
+    description: "Blog Authorship Corpus — short human posts for style / stylometrics."
+    hf_id: null  # often distributed outside HF; use local path when available
+    local_subdir: blog_authorship
+    split_default: train
+    notes:
+      - "Use for short-form human writing style."
+      - "Primary signal for Style Loss / Human Style Encoder."
+
+  pg19:
+    enabled: true
+    role: human_style_long
+    description: "PG-19 — long-form human books / chapters."
+    hf_id: deepmind/pg19
+    local_subdir: pg19
+    split_default: train
+    notes:
+      - "Use for long-context human writing / burstiness."
+      - "Good companion to Blog Authorship (short vs long)."
+
+  raid:
+    enabled: true
+    role: ai_vs_human
+    description: "RAID — large AI vs human detection corpus covering many AI models."
+    hf_id: null  # set when the HF mirror / release id you use is confirmed
+    local_subdir: raid
+    split_default: train
+    notes:
+      - "Primary AI vs human discrimination data."
+      - "Feeds Human/AI Discriminator + Adversarial / Discriminator rewards."
+
+  mage:
+    enabled: true
+    role: ai_vs_human
+    description: "MAGE — solid AI vs human detection corpus across generators."
+    hf_id: yaful/MAGE
+    local_subdir: mage
+    split_default: train
+    notes:
+      - "Complement RAID for detector-style supervision."
+
+  par3:
+    enabled: true
+    role: paraphrase
+    description: "PAR-3 — paraphrase pairs (DIPPER-related); meaning-preserving rewrite signal."
+    hf_id: null  # set when the release id / mirror you use is confirmed
+    local_subdir: par3
+    split_default: train
+    notes:
+      - "Closest public proxy to paraphrasing while keeping meaning."
+      - "Useful for Semantic Loss pairing until true AI→humanized pairs exist."
+
+  hc3:
+    enabled: true
+    role: ai_human_pairs_rough
+    description: "HC3 — ChatGPT vs human answers (Dec 2022 era; rough paired examples)."
+    hf_id: Hello-SimpleAI/HC3
+    local_subdir: hc3
+    split_default: train
+    notes:
+      - "Usable but old and not perfectly matched."
+      - "Stopgap for rough AI vs human paired examples."
+
+# Future (NOT implemented yet):
+# Build true humanization pairs by taking human text and rewriting with AI:
+#   human_text  →  AI rewrite  →  (source=AI, target=human)
+future_pair_construction:
+  enabled: false
+  strategy: human_to_ai_rewrite
+  description: >
+    Collect human-written text (e.g. from Blog Authorship / PG-19),
+    rewrite with an AI model, and store pairs as
+    source_text=AI rewrite, target_text=original human.
+  status: planned
