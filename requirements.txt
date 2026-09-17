@@ -1,0 +1,23 @@
+# Core deep learning
+torch>=2.1.0
+transformers>=4.40.0
+accelerate>=0.30.0
+sentencepiece>=0.2.0
+peft>=0.11.0
+trl>=0.9.0
+
+# Data & evaluation
+datasets>=2.19.0
+evaluate>=0.4.2
+numpy>=1.26.0
+pandas>=2.2.0
+scikit-learn>=1.4.0
+nltk>=3.8.1
+
+# Config & utilities
+PyYAML>=6.0.1
+tensorboard>=2.16.0
+tqdm>=4.66.0
+
+# Testing
+pytest>=8.0.0
