@@ -1,0 +1,110 @@
+# Smoke-training config: tiny backend, few steps — for pipeline verification only.
+# Not for full GPU training.
+
+project:
+  name: AI-Humanizer-Smoke
+  seed: 42
+  output_dir: outputs
+  checkpoint_dir: checkpoints
+  log_dir: outputs/logs_smoke
+
+device: cpu
+
+model:
+  backend: flan_t5
+  model_name: tiny-backend
+  tokenizer_name: tiny-backend
+  max_input_length: 64
+  max_output_length: 64
+  use_peft: false
+  generation:
+    max_new_tokens: 16
+    num_beams: 1
+    do_sample: false
+
+gumbel:
+  temperature: 1.0
+  hard: false
+  schedule_enabled: false
+
+embedding:
+  freeze: false
+  share_weights: true
+
+modules:
+  semantic_encoder:
+    hidden_size: 32
+    output_size: 32
+  stylometric:
+    feature_dim: 16
+    hidden_size: 32
+  human_style_encoder:
+    hidden_size: 32
+    projection_dim: 16
+  diversity:
+    window_size: 8
+    hidden_size: 16
+  discriminator:
+    hidden_size: 32
+    dropout: 0.0
+
+losses:
+  lambda_semantic: 1.0
+  lambda_style: 1.0
+  lambda_contrastive: 1.0
+  lambda_adversarial: 0.5
+  lambda_diversity: 0.5
+  lambda_ppl: 0.05
+
+training:
+  learning_rate: 1.0e-4
+  batch_size: 2
+  epochs: 100000
+  weight_decay: 0.0
+  gradient_accumulation_steps: 1
+  max_grad_norm: 1.0
+  logging_steps: 1
+  save_steps: 50
+  eval_steps: 50
+  warmup_ratio: 0.0
+
+rl:
+  algorithm: ppo
+  learning_rate: 1.0e-4
+  batch_size: 2
+  mini_batch_size: 1
+  epochs: 1
+  ppo:
+    cliprange: 0.2
+    vf_coef: 0.1
+    ent_coef: 0.01
+    gamma: 1.0
+    lam: 0.95
+    kl_penalty: 0.05
+  reinforce:
+    gamma: 0.99
+    baseline: moving_average
+    entropy_coef: 0.01
+
+rewards:
+  lambda_semantic: 1.0
+  lambda_style: 1.0
+  lambda_human_style: 1.0
+  lambda_human: 1.0
+  lambda_discriminator: 1.0
+  lambda_diversity: 0.5
+  lambda_ppl: 0.05
+
+datasets:
+  catalog_path: configs/datasets.yaml
+  data_root: data
+  active: []
+  pair_construction:
+    enabled: false
+    strategy: human_to_ai_rewrite
+
+repositories:
+  kind: local
+  data_dir: data
+  checkpoint_dir: checkpoints
+  experiment_dir: outputs/experiments
