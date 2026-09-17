@@ -1,0 +1,167 @@
+# AI-Humanizer central configuration
+# Change model_backend / model_name to switch Transformer backbones
+# without modifying loss modules, rewards, or training pipelines.
+
+project:
+  name: AI-Humanizer
+  seed: 42
+  output_dir: outputs
+  checkpoint_dir: checkpoints
+  log_dir: outputs/logs
+
+device: auto  # auto | cpu | cuda | mps
+
+# ---------------------------------------------------------------------------
+# Model backend (swappable: flan_t5 | long_t5 | mistral | llama | ...)
+# ---------------------------------------------------------------------------
+model:
+  backend: flan_t5
+  model_name: google/flan-t5-base
+  tokenizer_name: google/flan-t5-base
+  max_input_length: 512
+  max_output_length: 512
+  use_peft: false
+  peft:
+    r: 8
+    lora_alpha: 16
+    lora_dropout: 0.05
+    target_modules: null  # null = backend defaults
+  # Discrete generation (inference path — not used by Gumbel training path)
+  generation:
+    max_new_tokens: 128
+    num_beams: 1
+    do_sample: false
+    temperature: 1.0
+    top_p: 1.0
+    top_k: 50
+    repetition_penalty: 1.0
+    length_penalty: 1.0
+    early_stopping: false
+    no_repeat_ngram_size: 0
+
+# ---------------------------------------------------------------------------
+# Gumbel-Softmax soft token distribution (training path)
+# Temperature MUST come from this config — do not hard-code in modules.
+# ---------------------------------------------------------------------------
+gumbel:
+  temperature: 1.0
+  hard: false
+  schedule_enabled: false
+  temperature_end: 0.5
+  schedule_steps: 10000
+
+# ---------------------------------------------------------------------------
+# Differentiable embedding
+# ---------------------------------------------------------------------------
+embedding:
+  freeze: false
+  share_weights: true
+
+# ---------------------------------------------------------------------------
+# Module dimensions (shared latent sizes)
+# ---------------------------------------------------------------------------
+modules:
+  semantic_encoder:
+    hidden_size: 768
+    output_size: 768
+  stylometric:
+    feature_dim: 64
+    hidden_size: 256
+  human_style_encoder:
+    hidden_size: 768
+    projection_dim: 256
+  diversity:
+    window_size: 16
+    hidden_size: 128
+  discriminator:
+    hidden_size: 256
+    dropout: 0.1
+
+# ---------------------------------------------------------------------------
+# Loss weights — extensible.
+# Add a new key (e.g. lambda_new_loss) and register the matching loss;
+# the composite loss / trainer pick it up automatically.
+#
+# Objective (from architecture spec):
+#   L = λ1 L_semantic + λ2 L_style + λ3 L_contrastive
+#     + λ4 L_adversarial + λ5 L_diversity + λ6 L_PPL
+#
+# λ6 (perplexity) MUST stay small — PPL is a regularizer only.
+# ---------------------------------------------------------------------------
+losses:
+  lambda_semantic: 1.0
+  lambda_style: 1.0
+  lambda_contrastive: 1.0
+  lambda_adversarial: 0.5
+  lambda_diversity: 0.5
+  lambda_ppl: 0.05  # keep small (regularizer)
+
+# ---------------------------------------------------------------------------
+# Training (supervised stage — not executed by main.py)
+# ---------------------------------------------------------------------------
+training:
+  learning_rate: 5.0e-5
+  batch_size: 8
+  epochs: 3
+  weight_decay: 0.01
+  gradient_accumulation_steps: 1
+  max_grad_norm: 1.0
+  logging_steps: 10
+  save_steps: 500
+  eval_steps: 500
+  warmup_ratio: 0.03
+
+# ---------------------------------------------------------------------------
+# Reinforcement learning (PPO / REINFORCE)
+# ---------------------------------------------------------------------------
+rl:
+  algorithm: ppo  # ppo | reinforce
+  learning_rate: 1.0e-5
+  batch_size: 4
+  mini_batch_size: 1
+  epochs: 1
+  ppo:
+    cliprange: 0.2
+    vf_coef: 0.1
+    ent_coef: 0.01
+    gamma: 1.0
+    lam: 0.95
+    kl_penalty: 0.05
+  reinforce:
+    gamma: 0.99
+    baseline: moving_average
+    entropy_coef: 0.01
+
+# ---------------------------------------------------------------------------
+# Reward weights (RL stage) — extensible like losses; no hard-coded PPO formula
+# ---------------------------------------------------------------------------
+rewards:
+  lambda_semantic: 1.0
+  lambda_style: 1.0
+  lambda_human_style: 1.0
+  lambda_human: 1.0          # aliases discriminator human-likeness
+  lambda_discriminator: 1.0
+  lambda_diversity: 0.5
+  lambda_ppl: 0.05           # optional weak regularizer reward
+
+# ---------------------------------------------------------------------------
+# Datasets (catalog in configs/datasets.yaml — no auto-download / no training)
+# ---------------------------------------------------------------------------
+datasets:
+  catalog_path: configs/datasets.yaml
+  data_root: data
+  # Enabled names must match catalog keys. Empty list = use all enabled in catalog.
+  active: []
+  # Future: build AI←human pairs by rewriting human text with AI (not implemented).
+  pair_construction:
+    enabled: false
+    strategy: human_to_ai_rewrite
+
+# ---------------------------------------------------------------------------
+# Repository backends (filesystem / in-memory; no external DB yet)
+# ---------------------------------------------------------------------------
+repositories:
+  kind: local  # local | memory
+  data_dir: data
+  checkpoint_dir: checkpoints
+  experiment_dir: outputs/experiments
