@@ -81,6 +81,10 @@ def _print_init_summary(app) -> None:
     print("=" * 64)
 
 
+def _format_check_status(passed: bool) -> str:
+    return "PASS" if passed else "FAIL"
+
+
 def _print_dry_run(report) -> int:
     print("=" * 64)
     print("  AI-Humanizer — DRY RUN")
@@ -90,7 +94,7 @@ def _print_dry_run(report) -> int:
     print("-" * 64)
     width = max(len(k) for k in report.checks) if report.checks else 10
     for name, passed in report.checks.items():
-        status = "PASS" if passed else "FAIL"
+        status = _format_check_status(passed)
         print(f"  [{status}] {name:<{width}}")
     print("-" * 64)
     if report.details.get("configuration"):
