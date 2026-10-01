@@ -32,8 +32,14 @@ def _resolve_checkpoint_state(payload: dict, checkpoint_name: str) -> dict:
     return state
 
 
+def _validate_inference_args(args: argparse.Namespace) -> None:
+    if not args.text or not args.text.strip():
+        raise ValueError("Input text cannot be empty or solely whitespace.")
+
+
 def main() -> int:
     args = parse_args()
+    _validate_inference_args(args)
     app = build_application(config_path=args.config, load_weights=args.load_weights)
 
     if args.checkpoint:
