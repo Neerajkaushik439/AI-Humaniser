@@ -23,28 +23,17 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _resolve_checkpoint_state(payload: dict, checkpoint_name: str) -> dict:
-    state = payload.get("model_state", payload.get("model"))
-    if state is None:
-        raise KeyError(
-            f"Checkpoint '{checkpoint_name}' missing model_state/model weights."
-        )
-    return state
-
-
-def _validate_inference_args(args: argparse.Namespace) -> None:
-    if not args.text or not args.text.strip():
-        raise ValueError("Input text cannot be empty or solely whitespace.")
-
-
 def main() -> int:
     args = parse_args()
-    _validate_inference_args(args)
     app = build_application(config_path=args.config, load_weights=args.load_weights)
 
     if args.checkpoint:
         payload = app.repositories.checkpoints.load(args.checkpoint)
-        state = _resolve_checkpoint_state(payload, args.checkpoint)
+        state = payload.get("model_state", payload.get("model"))
+        if state is None:
+            raise KeyError(
+                f"Checkpoint '{args.checkpoint}' missing model_state/model weights."
+            )
         app.model.load_state_dict(state)
 
     app.model.eval()
